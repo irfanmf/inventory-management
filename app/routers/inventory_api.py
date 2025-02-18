@@ -8,19 +8,19 @@ import uuid
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
 # Get all inventory in a warehouse
-@router.get("/{warehouse_id}", response_model=list[InventoryResponse])
+@router.post("/{warehouse_id}", response_model=list[InventoryResponse])
 def get_inventory_by_warehouse(warehouse_id: uuid.UUID, db: Session = Depends(get_db)):
     inventory_items = db.query(Inventory).filter(Inventory.warehouse_id == warehouse_id).all()
     return inventory_items
 
 # Get item information across warehouses
-@router.get("/item/{item_id}", response_model=list[InventoryResponse])
+@router.post("/item/{item_id}", response_model=list[InventoryResponse])
 def get_item_across_warehouses(item_id: uuid.UUID, db: Session = Depends(get_db)):
     inventory_items = db.query(Inventory).filter(Inventory.item_id == item_id).all()
     return inventory_items
 
 # Get item information in a specific warehouse
-@router.get("/{warehouse_id}/item/{item_id}", response_model=InventoryResponse)
+@router.post("/{warehouse_id}/item/{item_id}", response_model=InventoryResponse)
 def get_item_in_warehouse(warehouse_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(get_db)):
     inventory_item = db.query(Inventory).filter(
         Inventory.warehouse_id == warehouse_id, Inventory.item_id == item_id
@@ -30,7 +30,7 @@ def get_item_in_warehouse(warehouse_id: uuid.UUID, item_id: uuid.UUID, db: Sessi
     return inventory_item
 
 # Update stock quantity
-@router.put("/{warehouse_id}/item/{item_id}")
+@router.post("/{warehouse_id}/item/{item_id}")
 def update_stock(warehouse_id: uuid.UUID, item_id: uuid.UUID, quantity: int, db: Session = Depends(get_db)):
     inventory_item = db.query(Inventory).filter(
         Inventory.warehouse_id == warehouse_id, Inventory.item_id == item_id

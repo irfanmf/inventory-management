@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/item", tags=["item"])
 
-@router.get("/items", response_model=list[ItemResponse])
+@router.post("/items", response_model=list[ItemResponse])
 def get_all_items(db: Session = Depends(get_db)):
     items = db.query(Item).all()
     return items
