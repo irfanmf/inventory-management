@@ -10,6 +10,21 @@ class InventoryBase(BaseModel):
 class InventoryCreate(InventoryBase):
     pass
 
+class WarehouseInventoryRequest(BaseModel):
+    warehouse_id: UUID
+
+class ItemInventoryRequest(BaseModel):
+    item_id: UUID
+
+class WarehouseItemRequest(BaseModel):
+    warehouse_id: UUID
+    item_id: UUID
+
+class UpdateStockRequest(BaseModel):
+    warehouse_id: UUID
+    item_id: UUID
+    quantity: int
+
 class InventoryMove(BaseModel):
     source_warehouse_id: UUID
     destination_warehouse_id: UUID

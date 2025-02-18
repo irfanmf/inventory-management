@@ -2,45 +2,58 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.inventory import Inventory
-from app.schemas.inventory import InventoryResponse, InventoryCreate, InventoryMove
+from app.schemas.inventory import InventoryResponse, InventoryMove, ItemInventoryRequest, UpdateStockRequest, WarehouseInventoryRequest, WarehouseItemRequest
 import uuid
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
 # Get all inventory in a warehouse
-@router.post("/{warehouse_id}", response_model=list[InventoryResponse])
-def get_inventory_by_warehouse(warehouse_id: uuid.UUID, db: Session = Depends(get_db)):
-    inventory_items = db.query(Inventory).filter(Inventory.warehouse_id == warehouse_id).all()
+@router.post("/warehouse", response_model=list[InventoryResponse])
+def get_inventory_by_warehouse(request: WarehouseInventoryRequest, db: Session = Depends(get_db)):
+    inventory_items = db.query(Inventory).filter(Inventory.warehouse_id == request.warehouse_id).all()
     return inventory_items
 
 # Get item information across warehouses
-@router.post("/item/{item_id}", response_model=list[InventoryResponse])
-def get_item_across_warehouses(item_id: uuid.UUID, db: Session = Depends(get_db)):
-    inventory_items = db.query(Inventory).filter(Inventory.item_id == item_id).all()
+@router.post("/item", response_model=list[InventoryResponse])
+def get_item_across_warehouses(request: ItemInventoryRequest, db: Session = Depends(get_db)):
+    inventory_items = db.query(Inventory).filter(Inventory.item_id == request.item_id).all()
     return inventory_items
 
 # Get item information in a specific warehouse
-@router.post("/{warehouse_id}/item/{item_id}", response_model=InventoryResponse)
-def get_item_in_warehouse(warehouse_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(get_db)):
+@router.post("/warehouse/item", response_model=InventoryResponse)
+def get_item_in_warehouse(request: WarehouseItemRequest, db: Session = Depends(get_db)):
     inventory_item = db.query(Inventory).filter(
-        Inventory.warehouse_id == warehouse_id, Inventory.item_id == item_id
+        Inventory.warehouse_id == request.warehouse_id,
+        Inventory.item_id == request.item_id
     ).first()
     if not inventory_item:
         raise HTTPException(status_code=404, detail="Item not found in warehouse")
     return inventory_item
 
 # Update stock quantity
-@router.post("/{warehouse_id}/item/{item_id}")
-def update_stock(warehouse_id: uuid.UUID, item_id: uuid.UUID, quantity: int, db: Session = Depends(get_db)):
+@router.post("/update-stock")
+def update_stock(request: UpdateStockRequest, db: Session = Depends(get_db)):
+    # Check if the inventory exists
     inventory_item = db.query(Inventory).filter(
-        Inventory.warehouse_id == warehouse_id, Inventory.item_id == item_id
+        Inventory.warehouse_id == request.warehouse_id,
+        Inventory.item_id == request.item_id
     ).first()
-    if not inventory_item:
-        raise HTTPException(status_code=404, detail="Item not found in warehouse")
-    
-    inventory_item.quantity += quantity  # Adjust stock
+
+    if inventory_item:
+        # Update existing stock
+        inventory_item.quantity = request.quantity
+    else:
+        # Create new inventory entry if not found
+        inventory_item = Inventory(
+            warehouse_id=request.warehouse_id,
+            item_id=request.item_id,
+            quantity=request.quantity
+        )
+        db.add(inventory_item)
+
     db.commit()
     db.refresh(inventory_item)
+
     return {"message": "Stock updated", "data": inventory_item}
 
 # Move stock from one warehouse to another
