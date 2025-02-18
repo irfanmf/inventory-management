@@ -7,9 +7,6 @@ class InventoryBase(BaseModel):
     item_id: UUID
     quantity: int
 
-class InventoryCreate(InventoryBase):
-    pass
-
 class WarehouseInventoryRequest(BaseModel):
     warehouse_id: UUID
 
@@ -29,6 +26,18 @@ class InventoryMove(BaseModel):
     source_warehouse_id: UUID
     destination_warehouse_id: UUID
     item_id: UUID
+    quantity: int
+
+class WarehouseInventoryResponse(BaseModel):
+    warehouse_id: UUID
+    item_id: UUID
+    item_name: str  # Include item name
+    quantity: int
+
+class ItemInventoryResponse(BaseModel):
+    warehouse_id: UUID
+    item_id: UUID
+    item_name: str  # Required field
     quantity: int
 
 class InventoryResponse(InventoryBase):

@@ -1,23 +1,58 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 from app.database import get_db
 from app.models.inventory import Inventory
-from app.schemas.inventory import InventoryResponse, InventoryMove, ItemInventoryRequest, UpdateStockRequest, WarehouseInventoryRequest, WarehouseItemRequest
+from app.models.item import Item
+from app.schemas.inventory import InventoryResponse, InventoryMove, ItemInventoryRequest, ItemInventoryResponse, UpdateStockRequest, WarehouseInventoryRequest, WarehouseInventoryResponse, WarehouseItemRequest
 import uuid
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
 # Get all inventory in a warehouse
-@router.post("/warehouse", response_model=list[InventoryResponse])
+@router.post("/warehouse", response_model=list[WarehouseInventoryResponse])
 def get_inventory_by_warehouse(request: WarehouseInventoryRequest, db: Session = Depends(get_db)):
-    inventory_items = db.query(Inventory).filter(Inventory.warehouse_id == request.warehouse_id).all()
-    return inventory_items
+    ItemAlias = aliased(Item)  # Create alias for Item table
+
+    inventory_items = (
+        db.query(
+            Inventory.warehouse_id,
+            Inventory.item_id,
+            ItemAlias.name.label("item_name"),  # Select item_name explicitly
+            Inventory.quantity
+        )
+        .join(ItemAlias, Inventory.item_id == ItemAlias.id)  # Join Inventory with Item
+        .filter(Inventory.warehouse_id == request.warehouse_id)
+        .all()
+    )
+
+    # Convert query results to list of dicts
+    return [
+        {"warehouse_id": row.warehouse_id, "item_id": row.item_id, "item_name": row.item_name, "quantity": row.quantity}
+        for row in inventory_items
+    ]
 
 # Get item information across warehouses
-@router.post("/item", response_model=list[InventoryResponse])
+@router.post("/item", response_model=list[ItemInventoryResponse])
 def get_item_across_warehouses(request: ItemInventoryRequest, db: Session = Depends(get_db)):
-    inventory_items = db.query(Inventory).filter(Inventory.item_id == request.item_id).all()
-    return inventory_items
+    ItemAlias = aliased(Item)  # Create alias for Item table
+
+    inventory_items = (
+        db.query(
+            Inventory.warehouse_id,
+            Inventory.item_id,
+            ItemAlias.name.label("item_name"),  # Select item_name explicitly
+            Inventory.quantity
+        )
+        .join(ItemAlias, Inventory.item_id == ItemAlias.id)  # Join Inventory with Item
+        .filter(Inventory.item_id == request.item_id)
+        .all()
+    )
+
+    # Convert query results to list of dicts
+    return [
+        {"warehouse_id": row.warehouse_id, "item_id": row.item_id, "item_name": row.item_name, "quantity": row.quantity}
+        for row in inventory_items
+    ]
 
 # Get item information in a specific warehouse
 @router.post("/warehouse/item", response_model=InventoryResponse)
