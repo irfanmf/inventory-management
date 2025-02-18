@@ -1,0 +1,34 @@
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+env/
+venv/
+.venv/
+*.pkl
+*.db
+
+# FastAPI specific
+*.sqlite
+*.log
+
+# VS Code specific
+.vscode/
+
+# macOS specific
+.DS_Store
+
+# .env file for sensitive information
+.env
+
+# PostgreSQL specific
+*.sql
+*.pgdata
+
+# PyCharm specific
+.idea/
+
+# Docker specific (if applicable)
+docker-compose.override.yml
+*.dockerfile
